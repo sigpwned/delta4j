@@ -19,28 +19,32 @@
  */
 package com.sigpwned.delta4j.jackson.probabilistic;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sigpwned.delta4j.core.probabilistic.BloomFilter;
+import com.sigpwned.delta4j.jackson.Delta4JModule;
 import java.io.IOException;
+import org.hamcrest.CoreMatchers;
+import org.junit.Test;
 
-public class BloomFilterJacksonSerializer extends StdSerializer<BloomFilter<?>> {
+public class BloomFilterJacksonSerializationTest {
 
-  public static final BloomFilterJacksonSerializer INSTANCE = new BloomFilterJacksonSerializer();
+  @Test
+  public void testSerializationAndDeserialization() throws IOException {
+    // Create a new BloomFilter
+    BloomFilter<?> originalBloomFilter = new BloomFilter<>(1000, 0.01);
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  public BloomFilterJacksonSerializer() {
-    super((Class) BloomFilter.class);
-  }
+    // Create ObjectMapper and register the BloomFilterJacksonSerializer and BloomFilterJacksonDeserializer
+    ObjectMapper mapper = new ObjectMapper().registerModule(new Delta4JModule());
 
-  @Override
-  public void serialize(BloomFilter<?> value, JsonGenerator g, SerializerProvider p)
-      throws IOException {
-    g.writeStartObject();
-    g.writeNumberField("expectedSize", value.getExpectedSize());
-    g.writeNumberField("falsePositiveProbability", value.getFalsePositiveProbability());
-    g.writeBinaryField("bits", value.toByteArray());
-    g.writeEndObject();
+    // Serialize the BloomFilter
+    String json = mapper.writeValueAsString(originalBloomFilter);
+
+    // Deserialize the BloomFilter
+    BloomFilter<?> deserializedBloomFilter = mapper.readValue(json, BloomFilter.class);
+
+    // Confirm that the new BloomFilter equals the original BloomFilter
+    assertThat(originalBloomFilter, CoreMatchers.is(deserializedBloomFilter));
   }
 }
