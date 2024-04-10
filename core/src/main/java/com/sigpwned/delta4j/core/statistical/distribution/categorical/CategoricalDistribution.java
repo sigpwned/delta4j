@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,13 +17,13 @@
  * limitations under the License.
  * ==================================LICENSE_END===================================
  */
-package com.sigpwned.delta4j.core.statistical.distribution.objects;
+package com.sigpwned.delta4j.core.statistical.distribution.categorical;
 
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
@@ -31,6 +31,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
@@ -67,37 +68,109 @@ import java.util.stream.Stream;
 public class CategoricalDistribution<T> {
 
   /**
-   * Merge two categorical distributions. The resulting distribution will have one category for each
-   * category in either input, and the probability of each category will be the normalized sum of
-   * the probabilities in the inputs.
+   * A sketch of a stream of data for fitting a categorical distribution. A sketch is a mutable
+   * container that accumulates the data necessary to fit a categorical distribution.
    *
-   * @param a   the first distribution
-   * @param b   the second distribution
-   * @param <A> the type of the categories in the first distribution
-   * @param <B> the type of the categories in the second distribution
-   * @return a new distribution
-   * @throws NullPointerException if a or b is null
+   * @param <T> the type of the categories
    */
-  public static <A, B extends A> CategoricalDistribution<A> merged(CategoricalDistribution<A> a,
-      CategoricalDistribution<B> b) {
-    a = requireNonNull(a);
-    b = requireNonNull(b);
+  public static class Sketch<T> implements Consumer<T> {
 
-    Map<A, Long> distribution = new HashMap<>();
+    private final Map<T, Long> distribution;
 
-    long lasta = 0L;
-    for (Map.Entry<Long, A> e : a.distribution.entrySet()) {
-      distribution.merge(e.getValue(), e.getKey() - lasta, Long::sum);
-      lasta = e.getKey();
+    public Sketch() {
+      this.distribution = new HashMap<>();
     }
 
-    long lastb = 0L;
-    for (Map.Entry<Long, B> e : b.distribution.entrySet()) {
-      distribution.merge(e.getValue(), e.getKey() - lastb, Long::sum);
-      lastb = e.getKey();
+    /**
+     * Create a sketch from a distribution. The distribution is used as the initial state of the new
+     * sketch. Note that elements with zero count are ignored.
+     *
+     * @param distribution a distribution
+     * @throws NullPointerException     if distribution is null or contains a null key or value
+     * @throws IllegalArgumentException if distribution contains a negative count
+     */
+    public Sketch(Map<T, Long> distribution) {
+      if (distribution == null) {
+        throw new NullPointerException();
+      }
+      this.distribution = new HashMap<>();
+      for (Map.Entry<T, Long> e : distribution.entrySet()) {
+        if (e.getKey() == null || e.getValue() == null) {
+          throw new NullPointerException();
+        } else if (e.getValue() < 0L) {
+          throw new IllegalArgumentException("distribution counts must be positive");
+        } else if (e.getValue() == 0) {
+          // ignore zero counts
+        } else {
+          this.distribution.put(e.getKey(), e.getValue());
+        }
+      }
     }
 
-    return of(distribution);
+    public Map<T, Long> categories() {
+      return unmodifiableMap(distribution);
+    }
+
+    public void merge(Sketch<T> that) {
+      for (Map.Entry<T, Long> e : that.distribution.entrySet()) {
+        distribution.merge(e.getKey(), e.getValue(), Long::sum);
+      }
+    }
+
+    /**
+     * Accept a single element with a count of 1.
+     *
+     * @param t the element
+     * @throws NullPointerException if t is null
+     */
+    @Override
+    public void accept(T t) {
+      if (t == null) {
+        throw new NullPointerException();
+      }
+      accept(t, 1L);
+    }
+
+    /**
+     * Accept a single element with a count. If the count is zero, then the element is ignored.
+     *
+     * @param t     the element
+     * @param count the count
+     * @throws NullPointerException     if t is null
+     * @throws IllegalArgumentException if count is negative
+     */
+    public void accept(T t, long count) {
+      if (t == null) {
+        throw new NullPointerException();
+      }
+      if (count < 0L) {
+        throw new IllegalArgumentException("distribution counts must be positive");
+      }
+      if (count > 0L) {
+        distribution.merge(t, count, Long::sum);
+      }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Sketch<?> sketch)) {
+        return false;
+      }
+      return Objects.equals(distribution, sketch.distribution);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(distribution);
+    }
+
+    @Override
+    public String toString() {
+      return "Sketch{" + "distribution=" + distribution + '}';
+    }
   }
 
   /**
@@ -111,16 +184,11 @@ public class CategoricalDistribution<T> {
    * @throws NullPointerException if the stream contains a null element
    * @see #fitUniform(Set)
    */
-  public static <T> Collector<T, Set<T>, CategoricalDistribution<T>> toUniformCategoricalDistribution() {
-    return Collector.of(HashSet::new, (m, t) -> {
-      if (t == null) {
-        throw new NullPointerException();
-      }
-      m.add(t);
-    }, (a, b) -> {
-      a.addAll(b);
+  public static <T> Collector<T, Sketch<T>, CategoricalDistribution<T>> toUniformCategoricalDistribution() {
+    return Collector.of(Sketch::new, Sketch::accept, (a, b) -> {
+      a.merge(b);
       return a;
-    }, CategoricalDistribution::fitUniform);
+    }, CategoricalDistribution::fromSketch);
   }
 
   /**
@@ -134,18 +202,11 @@ public class CategoricalDistribution<T> {
    * @throws NullPointerException if the stream contains a null element
    * @see #fitEmpiricalFromOccurrences(Stream)
    */
-  public static <T> Collector<T, Map<T, Long>, CategoricalDistribution<T>> toEmpiricalCategoricalDistributionFromOccurrences() {
-    return Collector.of(HashMap::new, (m, t) -> {
-      if (t == null) {
-        throw new NullPointerException();
-      }
-      m.merge(t, 1L, Long::sum);
-    }, (a, b) -> {
-      for (Map.Entry<T, Long> e : b.entrySet()) {
-        a.merge(e.getKey(), e.getValue(), Long::sum);
-      }
+  public static <T> Collector<T, Sketch<T>, CategoricalDistribution<T>> toEmpiricalCategoricalDistributionFromOccurrences() {
+    return Collector.of(Sketch::new, Sketch::accept, (a, b) -> {
+      a.merge(b);
       return a;
-    }, CategoricalDistribution::of);
+    }, CategoricalDistribution::fromSketch);
   }
 
   /**
@@ -161,29 +222,17 @@ public class CategoricalDistribution<T> {
    * @throws IllegalArgumentException if the stream contains a negative count
    * @see #fitEmpiricalFromCounts(Stream)
    */
-  public static <T> Collector<Map.Entry<T, Long>, Map<T, Long>, CategoricalDistribution<T>> toEmpiricalCategoricalDistributionFromCounts() {
-    return Collector.of(HashMap::new, (m, t) -> {
-      if (t == null) {
-        throw new NullPointerException();
-      }
-      if (t.getKey() == null) {
-        throw new NullPointerException();
-      }
-      if (t.getValue() == null) {
-        throw new NullPointerException();
-      }
-      if (t.getValue() < 0L) {
-        throw new IllegalArgumentException("distribution counts must not be negative");
-      }
-      if (t.getValue() > 0L) {
-        m.merge(t.getKey(), t.getValue(), Long::sum);
-      }
+  public static <T> Collector<Map.Entry<T, Long>, Sketch<T>, CategoricalDistribution<T>> toEmpiricalCategoricalDistributionFromCounts() {
+    return Collector.of(Sketch::new, (m, t) -> {
+      m.accept(t.getKey(), t.getValue());
     }, (a, b) -> {
-      for (Map.Entry<T, Long> e : b.entrySet()) {
-        a.merge(e.getKey(), e.getValue(), Long::sum);
-      }
+      a.merge(b);
       return a;
-    }, CategoricalDistribution::of);
+    }, CategoricalDistribution::fromSketch);
+  }
+
+  public static <T> CategoricalDistribution<T> fromSketch(Sketch<T> sketch) {
+    return of(sketch.distribution);
   }
 
   /**
@@ -361,7 +410,7 @@ public class CategoricalDistribution<T> {
    *
    * @return the total number of occurrences
    */
-  public Stream<Map.Entry<T, Long>> stream() {
+  public Stream<Map.Entry<T, Long>> categories() {
     // This is O(n log n) but it's the best we can do in the current Java version. Access to
     // Gatherers from JEP 461 (https://openjdk.org/jeps/461) would make this more efficient with
     // O(1) sliding window logic, making this a O(n) operation.

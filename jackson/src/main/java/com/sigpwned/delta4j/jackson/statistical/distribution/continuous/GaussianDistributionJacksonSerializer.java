@@ -1,6 +1,6 @@
 /*-
  * =================================LICENSE_START==================================
- * delta4j-core
+ * delta4j-jackson
  * ====================================SECTION=====================================
  * Copyright (C) 2024 Andy Boothe
  * ====================================SECTION=====================================
@@ -17,23 +17,25 @@
  * limitations under the License.
  * ==================================LICENSE_END===================================
  */
-package com.sigpwned.delta4j.core.statistical.distribution;
+package com.sigpwned.delta4j.jackson.statistical.distribution.continuous;
 
-import java.util.Random;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.sigpwned.delta4j.core.statistical.distribution.continuous.GaussianDistribution;
+import java.io.IOException;
 
-/**
- * A distribution of objects.
- *
- * @param <T> the type of the objects
- */
-@FunctionalInterface
-public interface ObjectDistribution<T> {
+public class GaussianDistributionJacksonSerializer extends JsonSerializer<GaussianDistribution> {
 
-  /**
-   * Samples a value from the distribution.
-   *
-   * @param random the random number generator
-   * @return a value sampled from the distribution
-   */
-  public T sample(Random random);
+  public static final GaussianDistributionJacksonSerializer INSTANCE = new GaussianDistributionJacksonSerializer();
+
+  @Override
+  public void serialize(GaussianDistribution value, JsonGenerator g, SerializerProvider p)
+      throws IOException {
+    g.writeStartObject();
+    g.writeStringField("type", "gaussian");
+    g.writeNumberField("mu", value.mu());
+    g.writeNumberField("sigma", value.sigma());
+    g.writeEndObject();
+  }
 }

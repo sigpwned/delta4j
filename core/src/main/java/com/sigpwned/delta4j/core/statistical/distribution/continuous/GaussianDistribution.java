@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,8 +17,9 @@
  * limitations under the License.
  * ==================================LICENSE_END===================================
  */
-package com.sigpwned.delta4j.core.statistical.distribution.doubles;
+package com.sigpwned.delta4j.core.statistical.distribution.continuous;
 
+import com.sigpwned.delta4j.core.statistical.distribution.ContinuousDistribution;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.DoubleConsumer;
@@ -30,16 +31,39 @@ import java.util.stream.DoubleStream;
  * spread of the distribution. The distribution is symmetric about the mean, and the standard
  * deviation controls the width of the distribution.
  */
-public class GaussianDistribution {
+public class GaussianDistribution implements ContinuousDistribution {
 
   /**
-   * A sketch of a stream of data for fitting a Gaussian distribution.
+   * A sketch of a stream of data for fitting a Gaussian distribution. A sketch is a mutable
+   * container that accumulates the data necessary to fit a Gaussian distribution.
    */
-  private static class Sketch implements DoubleConsumer {
+  public static class Sketch implements DoubleConsumer {
 
-    public double sum;
-    public double sumOfSquares;
-    public long count;
+    private double sum;
+    private double sumOfSquares;
+    private long count;
+
+    public Sketch() {
+      this(0.0, 0.0, 0);
+    }
+
+    public Sketch(double sum, double sumOfSquares, long count) {
+      this.sum = sum;
+      this.sumOfSquares = sumOfSquares;
+      this.count = count;
+    }
+
+    public double sum() {
+      return sum;
+    }
+
+    public double sumOfSquares() {
+      return sumOfSquares;
+    }
+
+    public long count() {
+      return count;
+    }
 
     public void merge(Sketch that) {
       this.sum = this.sum + that.sum;
@@ -53,18 +77,39 @@ public class GaussianDistribution {
       this.sumOfSquares = this.sumOfSquares + value * value;
       this.count = this.count + 1;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Sketch sketch)) {
+        return false;
+      }
+      return Double.compare(sum, sketch.sum) == 0
+          && Double.compare(sumOfSquares, sketch.sumOfSquares) == 0 && count == sketch.count;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(sum, sumOfSquares, count);
+    }
+
+    @Override
+    public String toString() {
+      return "Sketch{" + "sum=" + sum + ", sumOfSquares=" + sumOfSquares + ", count=" + count + '}';
+    }
   }
 
   /**
-   * Fits a Gaussian distribution to the specified stream of data.
+   * Fits a Gaussian distribution to the specified sketch of data.
    *
-   * @param stream the stream of data
-   * @return an optional Gaussian distribution
-   * @throws IllegalArgumentException if the stream contains less than two elements
-   * @throws IllegalArgumentException if the stream elements are all the same
+   * @param sketch the sketch of data
+   * @return a Gaussian distribution
+   * @throws IllegalArgumentException if the sketch contains less than two elements
+   * @throws IllegalArgumentException if the sketch elements are all the same
    */
-  public static GaussianDistribution fit(DoubleStream stream) {
-    Sketch sketch = stream.collect(Sketch::new, Sketch::accept, Sketch::merge);
+  public static GaussianDistribution fromSketch(Sketch sketch) {
     if (sketch.count < 2) {
       // No data to fit
       throw new IllegalArgumentException("insufficient data");
@@ -76,6 +121,18 @@ public class GaussianDistribution {
       throw new IllegalArgumentException("no variance");
     }
     return new GaussianDistribution(mu, sigma);
+  }
+
+  /**
+   * Fits a Gaussian distribution to the specified stream of data.
+   *
+   * @param stream the stream of data
+   * @return an optional Gaussian distribution
+   * @throws IllegalArgumentException if the stream contains less than two elements
+   * @throws IllegalArgumentException if the stream elements are all the same
+   */
+  public static GaussianDistribution fit(DoubleStream stream) {
+    return fromSketch(stream.collect(Sketch::new, Sketch::accept, Sketch::merge));
   }
 
   /**

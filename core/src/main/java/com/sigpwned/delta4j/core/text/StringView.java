@@ -21,13 +21,39 @@ package com.sigpwned.delta4j.core.text;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A view of a slice of a string. A string view is a lightweight {@link CharSequence} object that
+ * represents a logical slice of a string. The slice is defined by a start index (inclusive) and an
+ * end index (exclusive).
+ *
+ * @see ImmutableStringView
+ * @see MutableStringView
+ */
 public abstract class StringView<T extends StringView<T>> implements CharSequence,
     Comparable<CharSequence> {
 
+  /**
+   * Creates a new {@link ImmutableStringView} that represents the given slice of the given string.
+   * The slice is defined by the start index (inclusive) and the end index (exclusive).
+   *
+   * @param s     the string
+   * @param start the start index of the slice
+   * @param end   the end index of the slice
+   * @return the new slice
+   */
   public static ImmutableStringView immutableOf(String s, int start, int end) {
     return ImmutableStringView.of(s, start, end);
   }
 
+  /**
+   * Creates a new {@link MutableStringView} that represents the given slice of the given string.
+   * The slice is defined by the start index (inclusive) and the end index (exclusive).
+   *
+   * @param s     the string
+   * @param start the start index of the slice
+   * @param end   the end index of the slice
+   * @return the new slice
+   */
   public static MutableStringView mutableOf(String s, int start, int end) {
     return MutableStringView.of(s, start, end);
   }

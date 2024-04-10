@@ -29,22 +29,22 @@ import java.util.function.Supplier;
 /**
  * Samples real numbers from a double distribution.
  */
-public class DoubleDistributionSampler implements DoubleSupplier {
+public class ContinuousDistributionSampler implements DoubleSupplier {
 
-  public static DoubleDistributionSampler ofInstance(DoubleDistribution distribution, Random rand) {
+  public static ContinuousDistributionSampler ofInstance(ContinuousDistribution distribution, Random rand) {
     return of(distribution, () -> rand);
   }
 
-  public static DoubleDistributionSampler ofThreadLocal(DoubleDistribution distribution) {
+  public static ContinuousDistributionSampler ofThreadLocal(ContinuousDistribution distribution) {
     return of(distribution, ThreadLocalRandom::current);
   }
 
-  public static DoubleDistributionSampler of(DoubleDistribution distribution,
+  public static ContinuousDistributionSampler of(ContinuousDistribution distribution,
       Supplier<Random> randomSupplier) {
-    return new DoubleDistributionSampler(distribution, randomSupplier);
+    return new ContinuousDistributionSampler(distribution, randomSupplier);
   }
 
-  private final DoubleDistribution distribution;
+  private final ContinuousDistribution distribution;
   private final Supplier<Random> randomSupplier;
 
   /**
@@ -53,7 +53,7 @@ public class DoubleDistributionSampler implements DoubleSupplier {
    * @param distribution   the double distribution
    * @param randomSupplier the random number generator supplier
    */
-  public DoubleDistributionSampler(DoubleDistribution distribution,
+  public ContinuousDistributionSampler(ContinuousDistribution distribution,
       Supplier<Random> randomSupplier) {
     this.distribution = requireNonNull(distribution);
     this.randomSupplier = requireNonNull(randomSupplier);

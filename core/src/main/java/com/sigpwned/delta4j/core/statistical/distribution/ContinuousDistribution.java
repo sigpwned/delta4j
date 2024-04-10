@@ -25,7 +25,7 @@ import java.util.Random;
  * A distribution of real numbers.
  */
 @FunctionalInterface
-public interface DoubleDistribution {
+public interface ContinuousDistribution {
 
   /**
    * Samples a value from the distribution.

@@ -23,13 +23,43 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Arrays;
 
+/**
+ * A view of a slice of a string. A {@code CharArrayView} is a lightweight {@link CharSequence}
+ * object that represents a logical slice of a character array. The slice is defined by a start
+ * index (inclusive) and an end index (exclusive).
+ *
+ * @see UnmodifiableCharArrayView
+ * @see MutableCharArrayView
+ */
 public abstract class CharArrayView<T extends CharArrayView<T>> implements CharSequence,
     Comparable<CharSequence> {
 
+  /**
+   * Creates a new {@link UnmodifiableCharArrayView} that represents the given slice of the given
+   * character array. The slice is defined by the start index (inclusive) and the end index
+   * (exclusive). No array copies are performed, so changes to the underlying array will be
+   * reflected in the new slice.
+   *
+   * @param chars the character array
+   * @param start the start index of the slice
+   * @param end   the end index of the slice
+   * @return the new slice
+   */
   public static UnmodifiableCharArrayView unmodifiableOf(char[] chars, int start, int end) {
     return UnmodifiableCharArrayView.of(chars, start, end);
   }
 
+  /**
+   * Creates a new {@link MutableCharArrayView} that represents the given slice of the given
+   * character array. The slice is defined by the start index (inclusive) and the end index
+   * (exclusive). No array copies are performed, so changes to the underlying array will be
+   * reflected in the new slice.
+   *
+   * @param chars the character array
+   * @param start the start index of the slice
+   * @param end   the end index of the slice
+   * @return the new slice
+   */
   public static MutableCharArrayView mutableOf(char[] chars, int start, int end) {
     return MutableCharArrayView.of(chars, start, end);
   }

@@ -30,23 +30,24 @@ import java.util.function.Supplier;
  *
  * @param <T> the type of the objects
  */
-public class ObjectDistributionSampler<T> implements Supplier<T> {
+public class CategoricalDistributionSampler<T> implements Supplier<T> {
 
-  public static <T> ObjectDistributionSampler<T> ofInstance(ObjectDistribution<T> distribution,
+  public static <T> CategoricalDistributionSampler<T> ofInstance(CategoricalDistribution<T> distribution,
       Random rand) {
     return of(distribution, () -> rand);
   }
 
-  public static <T> ObjectDistributionSampler<T> ofThreadLocal(ObjectDistribution<T> distribution) {
+  public static <T> CategoricalDistributionSampler<T> ofThreadLocal(
+      CategoricalDistribution<T> distribution) {
     return of(distribution, ThreadLocalRandom::current);
   }
 
-  public static <T> ObjectDistributionSampler<T> of(ObjectDistribution<T> distribution,
+  public static <T> CategoricalDistributionSampler<T> of(CategoricalDistribution<T> distribution,
       Supplier<Random> randomSupplier) {
-    return new ObjectDistributionSampler<>(distribution, randomSupplier);
+    return new CategoricalDistributionSampler<>(distribution, randomSupplier);
   }
 
-  private final ObjectDistribution<T> distribution;
+  private final CategoricalDistribution<T> distribution;
   private final Supplier<Random> randomSupplier;
 
   /**
@@ -55,7 +56,7 @@ public class ObjectDistributionSampler<T> implements Supplier<T> {
    * @param distribution   the object distribution
    * @param randomSupplier the random number generator supplier
    */
-  public ObjectDistributionSampler(ObjectDistribution<T> distribution,
+  public CategoricalDistributionSampler(CategoricalDistribution<T> distribution,
       Supplier<Random> randomSupplier) {
     this.distribution = requireNonNull(distribution);
     this.randomSupplier = requireNonNull(randomSupplier);
