@@ -4,7 +4,7 @@
 
   <groupId>com.sigpwned</groupId>
   <artifactId>delta4j</artifactId>
-  <version>0.0.0-b0</version>
+  <version>0.0.0-b1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>delta4j</name>
@@ -22,7 +22,7 @@
     <developerConnection>scm:git:ssh://git@github.com/sigpwned/delta4j.git
     </developerConnection>
     <url>https://github.com/sigpwned/delta4j/tree/main</url>
-    <tag>v0.0.0-b0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <licenses>
