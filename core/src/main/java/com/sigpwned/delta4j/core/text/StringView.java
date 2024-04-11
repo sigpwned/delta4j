@@ -158,7 +158,7 @@ public abstract class StringView<T extends StringView<T>> implements CharSequenc
     if (index < 0 || index >= lengthOfSlice()) {
       throw new IndexOutOfBoundsException("Index out of bounds: " + index);
     }
-    return string.charAt(index);
+    return string.charAt(start + index);
   }
 
   /**
