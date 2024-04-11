@@ -24,7 +24,6 @@ import java.util.Random;
 /**
  * A distribution of integers.
  */
-@FunctionalInterface
 public interface DiscreteDistribution {
 
   /**
