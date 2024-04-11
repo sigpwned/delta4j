@@ -25,6 +25,8 @@ to make integrating it into existing projects as simple as possible.
 
 * core: The core module contains the core functionality of delta4j, including probabilistic data
   structures, statistical distributions, and text processing utilities.
+* jackson: The jackson module provides support for serializing and deserializing delta4j data
+  structures using the Jackson JSON library.
 
 ## Quick Start
 
@@ -105,6 +107,15 @@ The `CharArrayView` class is a lightweight, mutable, and serializable subclass o
 that can be used to create substring views of a larger character array without incurring the cost of
 copying the underlying character array. Both mutable (`MutableCharArrayView`) and immutable
 (`ImmutableCharArrayView`) version are provided. A similar example applies to `CharArrayView`.
+
+### Jackson Serialization
+
+The `delta4j-jackson` module provides support for serializing and deserializing delta4j data
+structures using the Jackson JSON library. To use this module, add it to your POM file and register
+the module with your `ObjectMapper` instance:
+
+    ObjectMapper mapper=new ObjectMapper();
+    mapper.registerModule(new Delta4jModule());
 
 ## Installation
 
