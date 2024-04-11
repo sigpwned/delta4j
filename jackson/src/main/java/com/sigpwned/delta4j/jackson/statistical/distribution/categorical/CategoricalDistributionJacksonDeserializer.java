@@ -44,26 +44,27 @@ public class CategoricalDistributionJacksonDeserializer extends
 
   public static final CategoricalDistributionJacksonDeserializer INSTANCE = new CategoricalDistributionJacksonDeserializer();
 
-  private final JavaType categoryType;
+  private final JavaType contextualType;
 
   public CategoricalDistributionJacksonDeserializer() {
     this(null);
   }
 
-  private CategoricalDistributionJacksonDeserializer(JavaType categoryType) {
+  private CategoricalDistributionJacksonDeserializer(JavaType contextualType) {
     super(CategoricalDistribution.class);
-    this.categoryType = categoryType;
+    this.contextualType = contextualType;
   }
 
-  private static final AtomicBoolean WARNED = new AtomicBoolean(false);
+  /* default */ static final AtomicBoolean WARNED = new AtomicBoolean(false);
 
   @Override
   public CategoricalDistribution<?> deserialize(JsonParser p, DeserializationContext context)
       throws IOException, JsonProcessingException {
-    JavaType categoryType;
-    if (getCategoryType() != null) {
-      categoryType = getCategoryType();
-    } else {
+    JavaType categoryType = null;
+    if (categoryType == null && contextualType != null) {
+      categoryType = contextualType.containedType(0);
+    }
+    if (categoryType == null) {
       if (LOGGER.isWarnEnabled()) {
         if (WARNED.getAndSet(true) == false) {
           LOGGER.warn(
@@ -94,9 +95,5 @@ public class CategoricalDistributionJacksonDeserializer extends
   public CategoricalDistributionJacksonDeserializer createContextual(DeserializationContext context,
       BeanProperty beanProperty) throws JsonMappingException {
     return new CategoricalDistributionJacksonDeserializer(context.getContextualType());
-  }
-
-  private JavaType getCategoryType() {
-    return categoryType;
   }
 }

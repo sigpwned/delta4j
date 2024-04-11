@@ -407,16 +407,21 @@ public class CategoricalDistribution<T> {
   /**
    * Returns the underlying frequency data of this distribution as an unmodifiable map. The map is a
    * copy of the internal data structure, and changes to the map will not affect the distribution.
+   * The stream is not guaranteed to have any particular ordering.
    *
    * @return the total number of occurrences
    */
   public Stream<Map.Entry<T, Long>> categories() {
-    // This is O(n log n) but it's the best we can do in the current Java version. Access to
-    // Gatherers from JEP 461 (https://openjdk.org/jeps/461) would make this more efficient with
-    // O(1) sliding window logic, making this a O(n) operation.
+    // Generating the stream is O(n log n) but it's the best we can do in the current Java version.
+    // Access to Gatherers from JEP 461 (https://openjdk.org/jeps/461) would make this more
+    // efficient with O(1) sliding window logic, making stream generation a O(n) operation.
     return distribution.entrySet().stream().map(e -> {
-      Map.Entry<Long, T> lower = distribution.lowerEntry(e.getKey());
-      long count = lower == null ? e.getKey() : e.getKey() - lower.getKey();
+      Long higher = distribution.higherKey(e.getKey());
+      if (higher == null) {
+        // Let's not box this on every call, shall we...
+        higher = total;
+      }
+      long count = higher - e.getKey();
       return Map.entry(e.getValue(), count);
     });
   }
@@ -429,7 +434,18 @@ public class CategoricalDistribution<T> {
     if (!(o instanceof CategoricalDistribution<?> that)) {
       return false;
     }
-    return total == that.total && Objects.equals(distribution, that.distribution);
+    if (this.total != that.total) {
+      return false;
+    }
+    if (this.distribution.size() != that.distribution.size()) {
+      return false;
+    }
+    Map thiscategories = this.categories().collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map thatcategories = that.categories().collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    if (!thiscategories.equals(thatcategories)) {
+      return false;
+    }
+    return true;
   }
 
   @Override

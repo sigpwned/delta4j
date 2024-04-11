@@ -41,7 +41,7 @@ public class CategoricalDistributionJacksonSerializer extends
       throws IOException {
     g.writeStartObject();
     g.writeStringField("type", "categorical");
-    g.writeStartArray("categories");
+    g.writeArrayFieldStart("categories");
     value.categories().forEach(entry -> {
       try {
         g.writeStartObject();

@@ -45,26 +45,27 @@ public class CategoricalDistributionSketchJacksonDeserializer extends
 
   public static final CategoricalDistributionSketchJacksonDeserializer INSTANCE = new CategoricalDistributionSketchJacksonDeserializer();
 
-  private final JavaType categoryType;
+  private final JavaType contextualType;
 
   public CategoricalDistributionSketchJacksonDeserializer() {
     this(null);
   }
 
-  private CategoricalDistributionSketchJacksonDeserializer(JavaType categoryType) {
+  private CategoricalDistributionSketchJacksonDeserializer(JavaType contextualType) {
     super(CategoricalDistribution.Sketch.class);
-    this.categoryType = categoryType;
+    this.contextualType = contextualType;
   }
 
-  private static final AtomicBoolean WARNED = new AtomicBoolean(false);
+  /* default */ static final AtomicBoolean WARNED = new AtomicBoolean(false);
 
   @Override
-  public CategoricalDistribution.Sketch<?> deserialize(JsonParser jp,
-      DeserializationContext context) throws IOException, JsonProcessingException {
-    JavaType categoryType;
-    if (getCategoryType() != null) {
-      categoryType = getCategoryType();
-    } else {
+  public CategoricalDistribution.Sketch<?> deserialize(JsonParser p, DeserializationContext context)
+      throws IOException, JsonProcessingException {
+    JavaType categoryType = null;
+    if (categoryType == null && contextualType != null) {
+      categoryType = contextualType.containedType(0);
+    }
+    if (categoryType == null) {
       if (LOGGER.isWarnEnabled()) {
         if (WARNED.getAndSet(true) == false) {
           LOGGER.warn(
@@ -74,13 +75,14 @@ public class CategoricalDistributionSketchJacksonDeserializer extends
       categoryType = context.constructType(Object.class);
     }
 
-    JsonNode rootNode = jp.getCodec().readTree(jp);
+    JsonNode rootNode = p.getCodec().readTree(p);
+
     JsonNode categoriesNode = rootNode.get("categories");
 
     Map<Object, Long> categories = new HashMap<>();
     if (categoriesNode.isArray()) {
       for (JsonNode categoryNode : categoriesNode) {
-        Object category = jp.getCodec()
+        Object category = p.getCodec()
             .treeToValue(categoryNode.get("category"), categoryType.getRawClass());
         long count = categoryNode.get("count").asLong();
         categories.put(category, count);
@@ -95,9 +97,5 @@ public class CategoricalDistributionSketchJacksonDeserializer extends
   public JsonDeserializer<?> createContextual(DeserializationContext context,
       BeanProperty beanProperty) throws JsonMappingException {
     return new CategoricalDistributionSketchJacksonDeserializer(context.getContextualType());
-  }
-
-  private JavaType getCategoryType() {
-    return categoryType;
   }
 }

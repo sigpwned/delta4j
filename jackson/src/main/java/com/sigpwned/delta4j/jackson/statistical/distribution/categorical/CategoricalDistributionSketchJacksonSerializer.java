@@ -40,7 +40,7 @@ public class CategoricalDistributionSketchJacksonSerializer extends
   public void serialize(CategoricalDistribution.Sketch<?> value, JsonGenerator g,
       SerializerProvider p) throws IOException {
     g.writeStartObject();
-    g.writeStartArray("categories");
+    g.writeArrayFieldStart("categories");
     for (Map.Entry<?, Long> category : value.categories().entrySet()) {
       g.writeStartObject();
       p.defaultSerializeField("category", category.getKey(), g);
