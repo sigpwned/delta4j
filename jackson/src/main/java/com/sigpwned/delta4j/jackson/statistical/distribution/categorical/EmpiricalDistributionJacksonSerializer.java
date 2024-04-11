@@ -22,25 +22,25 @@ package com.sigpwned.delta4j.jackson.statistical.distribution.categorical;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.sigpwned.delta4j.core.statistical.distribution.categorical.CategoricalDistribution;
+import com.sigpwned.delta4j.core.statistical.distribution.categorical.EmpiricalDistribution;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-public class CategoricalDistributionJacksonSerializer extends
-    StdSerializer<CategoricalDistribution<?>> {
+public class EmpiricalDistributionJacksonSerializer extends
+    StdSerializer<EmpiricalDistribution<?>> {
 
-  public static final CategoricalDistributionJacksonSerializer INSTANCE = new CategoricalDistributionJacksonSerializer();
+  public static final EmpiricalDistributionJacksonSerializer INSTANCE = new EmpiricalDistributionJacksonSerializer();
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public CategoricalDistributionJacksonSerializer() {
-    super((Class) CategoricalDistribution.class);
+  public EmpiricalDistributionJacksonSerializer() {
+    super((Class) EmpiricalDistribution.class);
   }
 
   @Override
-  public void serialize(CategoricalDistribution<?> value, JsonGenerator g, SerializerProvider p)
+  public void serialize(EmpiricalDistribution<?> value, JsonGenerator g, SerializerProvider p)
       throws IOException {
     g.writeStartObject();
-    g.writeStringField("type", "categorical");
+    g.writeStringField("type", "empirical");
     g.writeArrayFieldStart("categories");
     value.categories().forEach(entry -> {
       try {

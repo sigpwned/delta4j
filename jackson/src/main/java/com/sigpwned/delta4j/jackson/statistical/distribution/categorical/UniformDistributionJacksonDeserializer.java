@@ -28,37 +28,38 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.sigpwned.delta4j.core.statistical.distribution.categorical.CategoricalDistribution;
+import com.sigpwned.delta4j.core.statistical.distribution.categorical.EmpiricalDistribution;
+import com.sigpwned.delta4j.core.statistical.distribution.categorical.UniformDistribution;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CategoricalDistributionJacksonDeserializer extends
-    StdDeserializer<CategoricalDistribution<?>> implements ContextualDeserializer {
+public class UniformDistributionJacksonDeserializer extends
+    StdDeserializer<UniformDistribution<?>> implements ContextualDeserializer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(
-      CategoricalDistributionJacksonDeserializer.class);
+      UniformDistributionJacksonDeserializer.class);
 
-  public static final CategoricalDistributionJacksonDeserializer INSTANCE = new CategoricalDistributionJacksonDeserializer();
+  public static final UniformDistributionJacksonDeserializer INSTANCE = new UniformDistributionJacksonDeserializer();
 
   private final JavaType contextualType;
 
-  public CategoricalDistributionJacksonDeserializer() {
+  public UniformDistributionJacksonDeserializer() {
     this(null);
   }
 
-  private CategoricalDistributionJacksonDeserializer(JavaType contextualType) {
-    super(CategoricalDistribution.class);
+  private UniformDistributionJacksonDeserializer(JavaType contextualType) {
+    super(EmpiricalDistribution.class);
     this.contextualType = contextualType;
   }
 
   /* default */ static final AtomicBoolean WARNED = new AtomicBoolean(false);
 
   @Override
-  public CategoricalDistribution<?> deserialize(JsonParser p, DeserializationContext context)
+  public UniformDistribution<?> deserialize(JsonParser p, DeserializationContext context)
       throws IOException, JsonProcessingException {
     JavaType categoryType = null;
     if (categoryType == null && contextualType != null) {
@@ -68,7 +69,7 @@ public class CategoricalDistributionJacksonDeserializer extends
       if (LOGGER.isWarnEnabled()) {
         if (WARNED.getAndSet(true) == false) {
           LOGGER.warn(
-              "While deserializing CategoricalDistribution, categoryType is unknown. Falling back to Object...");
+              "While deserializing UniformDistribution, categoryType is unknown. Falling back to Object...");
         }
       }
       categoryType = context.constructType(Object.class);
@@ -77,23 +78,20 @@ public class CategoricalDistributionJacksonDeserializer extends
     JsonNode rootNode = p.getCodec().readTree(p);
     JsonNode categoriesNode = rootNode.get("categories");
 
-    Map<Object, Long> categories = new HashMap<>();
+    Set<Object> categories = new HashSet<>();
     if (categoriesNode.isArray()) {
       for (JsonNode categoryNode : categoriesNode) {
-        Object category = p.getCodec()
-            .treeToValue(categoryNode.get("category"), categoryType.getRawClass());
-        long count = categoryNode.get("count").asLong();
-        categories.put(category, count);
+        categories.add(p.getCodec().treeToValue(categoryNode, categoryType.getRawClass()));
       }
     }
 
     // Assuming a constructor or factory method that accepts a map of categories and counts
-    return new CategoricalDistribution<>(categories);
+    return new UniformDistribution<>(categories);
   }
 
   @Override
-  public CategoricalDistributionJacksonDeserializer createContextual(DeserializationContext context,
+  public UniformDistributionJacksonDeserializer createContextual(DeserializationContext context,
       BeanProperty beanProperty) throws JsonMappingException {
-    return new CategoricalDistributionJacksonDeserializer(context.getContextualType());
+    return new UniformDistributionJacksonDeserializer(context.getContextualType());
   }
 }

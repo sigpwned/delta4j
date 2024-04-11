@@ -23,32 +23,32 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.fasterxml.jackson.databind.JavaType;
-import com.sigpwned.delta4j.core.statistical.distribution.categorical.CategoricalDistribution;
+import com.sigpwned.delta4j.core.statistical.distribution.categorical.UniformDistribution;
 import com.sigpwned.delta4j.jackson.JacksonSerializationTest;
 import java.io.IOException;
-import java.util.Map;
+import java.util.Set;
 import org.junit.Test;
 
-public class CategoricalDistributionJacksonSerializationTest extends JacksonSerializationTest {
+public class UniformDistributionSketchJacksonSerializationTest extends JacksonSerializationTest {
 
-  public static final JavaType DISTRIBUTION_TYPE = MAPPER.getTypeFactory()
-      .constructParametricType(CategoricalDistribution.class, String.class);
+  public static final JavaType SKETCH_TYPE = MAPPER.getTypeFactory()
+      .constructParametricType(UniformDistribution.Sketch.class, String.class);
 
   /**
    * When deserializing with a parameterized type, we should not get a warning.
    */
   @Test
   public void testSerializationAndDeserializationWithParameterizedType() throws IOException {
-    CategoricalDistribution<String> original = new CategoricalDistribution<>(
-        Map.of("hello", 10L, "world", 20L));
+    UniformDistribution.Sketch<String> original = new UniformDistribution.Sketch<>(
+        Set.of("hello", "world"));
 
-    CategoricalDistributionJacksonDeserializer.WARNED.set(false);
+    UniformDistributionSketchJacksonDeserializer.WARNED.set(false);
 
-    CategoricalDistribution<String> serializedDeserialized = MAPPER.readValue(
-        MAPPER.writeValueAsString(original), DISTRIBUTION_TYPE);
+    UniformDistribution.Sketch<String> serializedDeserialized = MAPPER.readValue(
+        MAPPER.writeValueAsString(original), SKETCH_TYPE);
 
     assertThat(serializedDeserialized, is(original));
-    assertThat(CategoricalDistributionJacksonDeserializer.WARNED.get(), is(false));
+    assertThat(UniformDistributionSketchJacksonDeserializer.WARNED.get(), is(false));
   }
 
   /**
@@ -56,15 +56,15 @@ public class CategoricalDistributionJacksonSerializationTest extends JacksonSeri
    */
   @Test
   public void testSerializationAndDeserializationWithRawType() throws IOException {
-    CategoricalDistribution<String> original = new CategoricalDistribution<>(
-        Map.of("hello", 10L, "world", 20L));
+    UniformDistribution.Sketch<String> original = new UniformDistribution.Sketch<>(
+        Set.of("hello", "world"));
 
-    CategoricalDistributionJacksonDeserializer.WARNED.set(false);
+    UniformDistributionSketchJacksonDeserializer.WARNED.set(false);
 
-    CategoricalDistribution<String> serializedDeserialized = MAPPER.readValue(
-        MAPPER.writeValueAsString(original), CategoricalDistribution.class);
+    UniformDistribution.Sketch<String> serializedDeserialized = MAPPER.readValue(
+        MAPPER.writeValueAsString(original), UniformDistribution.Sketch.class);
 
     assertThat(serializedDeserialized, is(original));
-    assertThat(CategoricalDistributionJacksonDeserializer.WARNED.get(), is(true));
+    assertThat(UniformDistributionSketchJacksonDeserializer.WARNED.get(), is(true));
   }
 }

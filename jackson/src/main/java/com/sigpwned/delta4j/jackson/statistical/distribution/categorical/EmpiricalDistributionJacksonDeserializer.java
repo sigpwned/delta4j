@@ -24,12 +24,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.sigpwned.delta4j.core.statistical.distribution.categorical.CategoricalDistribution;
+import com.sigpwned.delta4j.core.statistical.distribution.categorical.EmpiricalDistribution;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,29 +36,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CategoricalDistributionSketchJacksonDeserializer extends
-    StdDeserializer<CategoricalDistribution.Sketch<?>> implements ContextualDeserializer {
+public class EmpiricalDistributionJacksonDeserializer extends
+    StdDeserializer<EmpiricalDistribution<?>> implements ContextualDeserializer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(
-      CategoricalDistributionSketchJacksonDeserializer.class);
+      EmpiricalDistributionJacksonDeserializer.class);
 
-  public static final CategoricalDistributionSketchJacksonDeserializer INSTANCE = new CategoricalDistributionSketchJacksonDeserializer();
+  public static final EmpiricalDistributionJacksonDeserializer INSTANCE = new EmpiricalDistributionJacksonDeserializer();
 
   private final JavaType contextualType;
 
-  public CategoricalDistributionSketchJacksonDeserializer() {
+  public EmpiricalDistributionJacksonDeserializer() {
     this(null);
   }
 
-  private CategoricalDistributionSketchJacksonDeserializer(JavaType contextualType) {
-    super(CategoricalDistribution.Sketch.class);
+  private EmpiricalDistributionJacksonDeserializer(JavaType contextualType) {
+    super(EmpiricalDistribution.class);
     this.contextualType = contextualType;
   }
 
   /* default */ static final AtomicBoolean WARNED = new AtomicBoolean(false);
 
   @Override
-  public CategoricalDistribution.Sketch<?> deserialize(JsonParser p, DeserializationContext context)
+  public EmpiricalDistribution<?> deserialize(JsonParser p, DeserializationContext context)
       throws IOException, JsonProcessingException {
     JavaType categoryType = null;
     if (categoryType == null && contextualType != null) {
@@ -69,14 +68,13 @@ public class CategoricalDistributionSketchJacksonDeserializer extends
       if (LOGGER.isWarnEnabled()) {
         if (WARNED.getAndSet(true) == false) {
           LOGGER.warn(
-              "While deserializing CategoricalDistribution, categoryType is unknown. Falling back to Object...");
+              "While deserializing EmpiricalDistribution, categoryType is unknown. Falling back to Object...");
         }
       }
       categoryType = context.constructType(Object.class);
     }
 
     JsonNode rootNode = p.getCodec().readTree(p);
-
     JsonNode categoriesNode = rootNode.get("categories");
 
     Map<Object, Long> categories = new HashMap<>();
@@ -90,12 +88,12 @@ public class CategoricalDistributionSketchJacksonDeserializer extends
     }
 
     // Assuming a constructor or factory method that accepts a map of categories and counts
-    return new CategoricalDistribution.Sketch<>(categories);
+    return new EmpiricalDistribution<>(categories);
   }
 
   @Override
-  public JsonDeserializer<?> createContextual(DeserializationContext context,
+  public EmpiricalDistributionJacksonDeserializer createContextual(DeserializationContext context,
       BeanProperty beanProperty) throws JsonMappingException {
-    return new CategoricalDistributionSketchJacksonDeserializer(context.getContextualType());
+    return new EmpiricalDistributionJacksonDeserializer(context.getContextualType());
   }
 }

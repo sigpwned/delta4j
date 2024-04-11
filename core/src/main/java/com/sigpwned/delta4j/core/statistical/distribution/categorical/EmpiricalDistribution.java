@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -65,7 +64,7 @@ import java.util.stream.Stream;
  *
  * @param <T> the type of the categories
  */
-public class CategoricalDistribution<T> {
+public class EmpiricalDistribution<T> {
 
   /**
    * A sketch of a stream of data for fitting a categorical distribution. A sketch is a mutable
@@ -182,31 +181,13 @@ public class CategoricalDistribution<T> {
    * @param <T> the type of the elements
    * @return a new collector
    * @throws NullPointerException if the stream contains a null element
-   * @see #fitUniform(Set)
+   * @see #fitOccurrences(Stream)
    */
-  public static <T> Collector<T, Sketch<T>, CategoricalDistribution<T>> toUniformCategoricalDistribution() {
+  public static <T> Collector<T, Sketch<T>, EmpiricalDistribution<T>> toEmpiricalCategoricalDistributionFromOccurrences() {
     return Collector.of(Sketch::new, Sketch::accept, (a, b) -> {
       a.merge(b);
       return a;
-    }, CategoricalDistribution::fromSketch);
-  }
-
-  /**
-   * Collect a stream of elements into a categorical distribution. The resulting distribution will
-   * have one category for each unique element in the stream, and the probability of each category
-   * will be proportional to the number of occurrences of that element in the stream. Null elements
-   * are not allowed.
-   *
-   * @param <T> the type of the elements
-   * @return a new collector
-   * @throws NullPointerException if the stream contains a null element
-   * @see #fitEmpiricalFromOccurrences(Stream)
-   */
-  public static <T> Collector<T, Sketch<T>, CategoricalDistribution<T>> toEmpiricalCategoricalDistributionFromOccurrences() {
-    return Collector.of(Sketch::new, Sketch::accept, (a, b) -> {
-      a.merge(b);
-      return a;
-    }, CategoricalDistribution::fromSketch);
+    }, EmpiricalDistribution::fromSketch);
   }
 
   /**
@@ -220,45 +201,19 @@ public class CategoricalDistribution<T> {
    * @return a new collector
    * @throws NullPointerException     if the stream contains a null element, key, or value
    * @throws IllegalArgumentException if the stream contains a negative count
-   * @see #fitEmpiricalFromCounts(Stream)
+   * @see #fitCounts(Stream)
    */
-  public static <T> Collector<Map.Entry<T, Long>, Sketch<T>, CategoricalDistribution<T>> toEmpiricalCategoricalDistributionFromCounts() {
+  public static <T> Collector<Map.Entry<T, Long>, Sketch<T>, EmpiricalDistribution<T>> toEmpiricalCategoricalDistributionFromCounts() {
     return Collector.of(Sketch::new, (m, t) -> {
       m.accept(t.getKey(), t.getValue());
     }, (a, b) -> {
       a.merge(b);
       return a;
-    }, CategoricalDistribution::fromSketch);
+    }, EmpiricalDistribution::fromSketch);
   }
 
-  public static <T> CategoricalDistribution<T> fromSketch(Sketch<T> sketch) {
+  public static <T> EmpiricalDistribution<T> fromSketch(Sketch<T> sketch) {
     return of(sketch.distribution);
-  }
-
-  /**
-   * Create a uniform categorical distribution from a set of elements. The resulting distribution
-   * will have one category for each element in the set, and equal probability for each category.
-   *
-   * @param xs  a set of elements
-   * @param <T> the type of the elements
-   * @return a new distribution
-   * @throws NullPointerException if xs is null or contains a null element
-   */
-  public static <T> CategoricalDistribution<T> fitUniform(Set<T> xs) {
-    return fitEmpiricalFromOccurrences(requireNonNull(xs).stream());
-  }
-
-  /**
-   * Create a uniform categorical distribution from a stream of elements. The resulting distribution
-   * will have one category for each element in the set, and equal probability for each category.
-   *
-   * @param stream a stream of elements
-   * @param <T>    the type of the elements
-   * @return a new distribution
-   * @throws NullPointerException if xs is null or contains a null element
-   */
-  public static <T> CategoricalDistribution<T> fitUniform(Stream<T> stream) {
-    return fitEmpiricalFromOccurrences(stream.distinct());
   }
 
   /**
@@ -271,7 +226,7 @@ public class CategoricalDistribution<T> {
    * @return a new distribution
    * @throws NullPointerException if stream is null or contains a null element
    */
-  public static <T> CategoricalDistribution<T> fitEmpiricalFromOccurrences(Stream<T> stream) {
+  public static <T> EmpiricalDistribution<T> fitOccurrences(Stream<T> stream) {
     return requireNonNull(stream).collect(toEmpiricalCategoricalDistributionFromOccurrences());
   }
 
@@ -287,7 +242,7 @@ public class CategoricalDistribution<T> {
    * @throws NullPointerException     if stream is null or contains a null element, key, or value
    * @throws IllegalArgumentException if stream contains a negative count
    */
-  public static <T> CategoricalDistribution<T> fitEmpiricalFromCounts(
+  public static <T> EmpiricalDistribution<T> fitCounts(
       Stream<Map.Entry<T, Long>> stream) {
     return requireNonNull(stream).collect(toEmpiricalCategoricalDistributionFromCounts());
   }
@@ -301,10 +256,10 @@ public class CategoricalDistribution<T> {
    * @return a new distribution
    * @throws NullPointerException     if distribution is null or contains a null key or value
    * @throws IllegalArgumentException if distribution contains a negative count
-   * @see #CategoricalDistribution(Map)
+   * @see #EmpiricalDistribution(Map)
    */
-  public static <T> CategoricalDistribution<T> of(Map<T, Long> distribution) {
-    return new CategoricalDistribution<>(distribution);
+  public static <T> EmpiricalDistribution<T> of(Map<T, Long> distribution) {
+    return new EmpiricalDistribution<>(distribution);
   }
 
   private final NavigableMap<Long, T> distribution;
@@ -318,7 +273,7 @@ public class CategoricalDistribution<T> {
    * @throws NullPointerException     if distribution is null or contains a null key
    * @throws IllegalArgumentException if distribution is empty or contains a negative count
    */
-  public CategoricalDistribution(Map<T, Long> distribution) {
+  public EmpiricalDistribution(Map<T, Long> distribution) {
     if (distribution == null) {
       throw new NullPointerException();
     }
@@ -348,7 +303,7 @@ public class CategoricalDistribution<T> {
     this.total = total;
   }
 
-  private CategoricalDistribution(NavigableMap<Long, T> distribution, long total) {
+  private EmpiricalDistribution(NavigableMap<Long, T> distribution, long total) {
     this.distribution = distribution;
     this.total = total;
   }
@@ -384,11 +339,11 @@ public class CategoricalDistribution<T> {
    * @return a new distribution of U
    * @throws NullPointerException if f is null or f(t) is null for some t
    */
-  public <U> CategoricalDistribution<U> map(Function<T, U> f) {
+  public <U> EmpiricalDistribution<U> map(Function<T, U> f) {
     if (f == null) {
       throw new NullPointerException();
     }
-    return new CategoricalDistribution<>(distribution.entrySet().stream()
+    return new EmpiricalDistribution<>(distribution.entrySet().stream()
         .collect(toMap(Map.Entry::getKey, e -> requireNonNull(f.apply(e.getValue())), (a, b) -> {
           // This should never happen since we're not changing keys
           throw new AssertionError("duplicate key");
@@ -431,7 +386,7 @@ public class CategoricalDistribution<T> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CategoricalDistribution<?> that)) {
+    if (!(o instanceof EmpiricalDistribution<?> that)) {
       return false;
     }
     if (this.total != that.total) {

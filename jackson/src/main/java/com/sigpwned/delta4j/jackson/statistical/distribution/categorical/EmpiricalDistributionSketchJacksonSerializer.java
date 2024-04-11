@@ -22,22 +22,22 @@ package com.sigpwned.delta4j.jackson.statistical.distribution.categorical;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.sigpwned.delta4j.core.statistical.distribution.categorical.CategoricalDistribution;
+import com.sigpwned.delta4j.core.statistical.distribution.categorical.EmpiricalDistribution;
 import java.io.IOException;
 import java.util.Map;
 
-public class CategoricalDistributionSketchJacksonSerializer extends
-    StdSerializer<CategoricalDistribution.Sketch<?>> {
+public class EmpiricalDistributionSketchJacksonSerializer extends
+    StdSerializer<EmpiricalDistribution.Sketch<?>> {
 
-  public static final CategoricalDistributionSketchJacksonSerializer INSTANCE = new CategoricalDistributionSketchJacksonSerializer();
+  public static final EmpiricalDistributionSketchJacksonSerializer INSTANCE = new EmpiricalDistributionSketchJacksonSerializer();
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public CategoricalDistributionSketchJacksonSerializer() {
-    super((Class) CategoricalDistribution.Sketch.class);
+  public EmpiricalDistributionSketchJacksonSerializer() {
+    super((Class) EmpiricalDistribution.Sketch.class);
   }
 
   @Override
-  public void serialize(CategoricalDistribution.Sketch<?> value, JsonGenerator g,
+  public void serialize(EmpiricalDistribution.Sketch<?> value, JsonGenerator g,
       SerializerProvider p) throws IOException {
     g.writeStartObject();
     g.writeArrayFieldStart("categories");
